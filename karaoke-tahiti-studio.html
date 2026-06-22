@@ -104,6 +104,8 @@ textarea{resize:vertical;width:100%;}
 .dropzone .dz-label{font-size:12px;color:var(--dim);}
 .dropzone .dz-file{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--teal);margin-top:4px;word-break:break-all;}
 .stage{position:relative;border-radius:10px;overflow:hidden;background:#000;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;}
+.stage:-webkit-full-screen{border-radius:0;aspect-ratio:auto;width:100vw;height:100vh;}
+.stage:fullscreen{border-radius:0;aspect-ratio:auto;width:100vw;height:100vh;}
 .stage video{width:100%;height:100%;object-fit:cover;opacity:.55;}
 .stage-empty{position:absolute;color:var(--faint);font-size:12px;font-family:'JetBrains Mono',monospace;}
 .band{position:absolute;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:8px 14px;}
@@ -227,6 +229,7 @@ textarea{resize:vertical;width:100%;}
       <video id="c-videoEl" muted playsinline></video>
       <div class="band band-chord" id="c-chordBand">—</div>
       <div class="band band-lyrics" id="c-lyricsBand"></div>
+      <button id="c-fullscreenBtn" style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:6px 10px;font-size:16px;border-radius:6px;">⛶</button>
     </div>
     <div class="transport" style="margin-top:12px;">
       <button class="play-btn primary" id="c-playBtn" disabled>▶</button>
@@ -276,6 +279,8 @@ textarea{resize:vertical;width:100%;}
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
       <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;" id="c-captureCount">0 <span style="color:var(--dim);font-family:'Inter',sans-serif;font-weight:400;font-size:12px;">/ 0 syllabes</span></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button id="c-undoBtn" disabled style="font-size:16px;padding:10px 16px;">↩ Annuler</button>
+        <button id="c-restartBtn" disabled style="font-size:16px;padding:10px 16px;">🔄 Zéro</button>
         <button id="c-replayBtn" disabled>🔁 Mode synchronisé</button>
         <button id="c-exportBtn" class="primary" disabled>⬇ Export JSON</button>
         <button id="c-sendToMixerBtn" class="primary" disabled>→ Envoyer au Mixeur</button>
@@ -309,6 +314,14 @@ textarea{resize:vertical;width:100%;}
       <span style="font-size:12px;color:var(--dim);">Volume général</span>
       <input type="range" id="m-masterVol" min="0" max="150" value="100" style="flex:1;">
       <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--teal);min-width:36px;" id="m-masterValDisplay">100%</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;">
+      <span style="font-size:12px;color:var(--dim);">Transposition</span>
+      <button id="m-transpDown" style="width:36px;height:36px;padding:0;font-size:16px;">♭</button>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--teal);min-width:40px;text-align:center;" id="m-transpDisplay">0</span>
+      <button id="m-transpUp" style="width:36px;height:36px;padding:0;font-size:16px;">♯</button>
+      <button id="m-transpReset" style="font-size:11px;padding:6px 10px;">Reset</button>
+      <span style="font-size:11px;color:var(--faint);">demi-tons</span>
     </div>
     <button id="m-tapBtn" class="primary" style="width:100%;padding:14px;font-size:15px;margin-top:10px;" disabled>▶ Taper pour lancer</button>
     <div class="confirm-banner" id="m-confirmBanner"></div>
@@ -457,6 +470,8 @@ const sharedData = {
   const replayBtn    = document.getElementById('c-replayBtn');
   const exportBtn    = document.getElementById('c-exportBtn');
   const sendToMixerBtn= document.getElementById('c-sendToMixerBtn');
+  const undoBtn      = document.getElementById('c-undoBtn');
+  const restartBtn   = document.getElementById('c-restartBtn');
   const captureCount = document.getElementById('c-captureCount');
   const songTitle    = document.getElementById('c-songTitle');
   const tapBtn       = document.getElementById('c-tapBtn');
@@ -590,10 +605,20 @@ const sharedData = {
   }
   function updateCaptureCount(){
     captureCount.innerHTML=captures.length+' <span style="color:var(--dim);font-family:\'Inter\',sans-serif;font-weight:400;font-size:12px;">/ '+wordTokens.length+' syllabes</span>';
-    exportBtn.disabled=captures.length===0;
-    resetBtn.disabled=captures.length===0;
-    replayBtn.disabled=captures.length===0;
-    sendToMixerBtn.disabled=captures.length===0;
+    const hasCap=captures.length>0;
+    exportBtn.disabled=!hasCap;
+    resetBtn.disabled=!hasCap;
+    replayBtn.disabled=!hasCap;
+    sendToMixerBtn.disabled=!hasCap;
+    undoBtn.disabled=!hasCap;
+    restartBtn.disabled=wordTokens.length===0;
+    // Autosave JSON dans localStorage
+    if(hasCap){
+      try{
+        const payload=buildPayload();
+        localStorage.setItem('papa_autosave', JSON.stringify(payload));
+      }catch(e){}
+    }
   }
   function updateTapLabel(){
     if(wordTokens.length===0){tapBtn.textContent=audioEl.paused?'▶ Lancer la lecture':'⏸ Pause';}
@@ -621,6 +646,38 @@ const sharedData = {
   }
   resetBtn.addEventListener('click',resetCapture);
 
+  // ↩ Annuler la dernière syllabe
+  undoBtn.addEventListener('click',()=>{
+    if(captures.length===0)return;
+    captures.pop();
+    currentWordIndex=Math.max(0,currentWordIndex-1);
+    // Retirer la classe sung du mot actuel
+    const el=lyricsBand.querySelector('.word[data-idx="'+currentWordIndex+'"]');
+    if(el){el.classList.remove('sung','current');}
+    highlightCurrent();
+    updateCaptureCount();
+    flash('Dernière syllabe annulée.');
+  });
+
+  // 🔄 Tout recommencer à zéro
+  restartBtn.addEventListener('click',()=>{
+    if(!confirm('Recommencer à zéro ? Toutes les captures seront effacées.')) return;
+    resetCapture();
+    try{localStorage.removeItem('papa_autosave');}catch(e){}
+    flash('Tout remis à zéro.');
+  });
+
+  // Restaurer autosave au chargement
+  try{
+    const saved=localStorage.getItem('papa_autosave');
+    if(saved){
+      const data=JSON.parse(saved);
+      if(data.captures&&data.captures.length>0){
+        showBanner('💾 Sauvegarde trouvée ('+data.captures.length+' syllabes) — recharge les paroles pour restaurer.');
+      }
+    }
+  }catch(e){}
+
   function captureWord(){
     if(!audioEl.src){flash('Charge un audio.');return;}
     if(audioEl.paused){flash('Lance la lecture avant de caler.');return;}
@@ -632,6 +689,26 @@ const sharedData = {
     if(currentWordIndex<wordTokens.length)highlightCurrent();
     else{chordBand.textContent='✓';flash('Terminé — export disponible.');}
   }
+
+  // Plein écran
+  const fullscreenBtn = document.getElementById('c-fullscreenBtn');
+  const stage = document.getElementById('c-stage');
+  fullscreenBtn.addEventListener('click',()=>{
+    if(document.fullscreenElement||document.webkitFullscreenElement){
+      (document.exitFullscreen||document.webkitExitFullscreen).call(document);
+      fullscreenBtn.textContent='⛶';
+    } else {
+      const req = stage.requestFullscreen||stage.webkitRequestFullscreen;
+      if(req) req.call(stage);
+      fullscreenBtn.textContent='✕';
+    }
+  });
+  document.addEventListener('fullscreenchange',()=>{
+    if(!document.fullscreenElement&&!document.webkitFullscreenElement) fullscreenBtn.textContent='⛶';
+  });
+  document.addEventListener('webkitfullscreenchange',()=>{
+    if(!document.fullscreenElement&&!document.webkitFullscreenElement) fullscreenBtn.textContent='⛶';
+  });
 
   tapBtn.addEventListener('click',()=>{
     if(mode==='playback'||wordTokens.length===0)togglePlay();
@@ -973,6 +1050,21 @@ const sharedData = {
     if(loadedCount()===0){flash('Charge un MP3 ou enregistre via le micro.');return;}
     if(isPlaying)stopAll();else startAll();
   }
+  // Transposition
+  let transpSemitones = 0;
+  const transpDisplay = document.getElementById('m-transpDisplay');
+  function applyTransposition(){
+    const ratio = Math.pow(2, transpSemitones/12);
+    Object.values(tracks).forEach(t=>{
+      if(t.sources) t.sources.forEach(s=>{ try{ s.playbackRate.value=ratio; }catch(e){} });
+    });
+    transpDisplay.textContent = (transpSemitones>0?'+':'')+transpSemitones;
+    flash('Transposition : '+(transpSemitones>0?'+':'')+transpSemitones+' demi-ton(s)');
+  }
+  document.getElementById('m-transpDown').addEventListener('click',()=>{ transpSemitones=Math.max(-12,transpSemitones-1); applyTransposition(); });
+  document.getElementById('m-transpUp').addEventListener('click',()=>{ transpSemitones=Math.min(12,transpSemitones+1); applyTransposition(); });
+  document.getElementById('m-transpReset').addEventListener('click',()=>{ transpSemitones=0; applyTransposition(); });
+
   playBtn.addEventListener('click',togglePlay);
   tapBtn.addEventListener('click',togglePlay);
   document.addEventListener('keydown',e=>{
@@ -1327,7 +1419,7 @@ function bassCheckReady(){
       Le fichier téléchargé sera un <strong style="color:var(--teal);">.webm</strong> lisible sur Chrome, VLC, et importable dans CapCut.
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-      <button id="e-exportBtn" class="primary" disabled style="font-size:15px;padding:14px 20px;">⬇ Lancer l'export MP4</button>
+      <button id="e-exportBtn" class="primary" disabled style="font-size:15px;padding:14px 20px;">⬇ Export WebM + MP4</button>
       <button id="e-stopExportBtn" disabled>⏹ Arrêter</button>
     </div>
     <div style="margin-top:12px;">
