@@ -192,6 +192,7 @@ textarea{resize:vertical;width:100%;}
   <button class="tab-btn active" data-tab="clipper">🎬 Étape 1 — Clipper</button>
   <button class="tab-btn" data-tab="mixer">🎚 Étape 2 — Mixeur</button>
   <button class="tab-btn" data-tab="bass">🎸 Étapes 3+4 — Basse</button>
+  <button class="tab-btn" data-tab="export">🎬 Étape 5 — Export Vidéo</button>
 </nav>
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
@@ -1238,5 +1239,417 @@ function bassCheckReady(){
   });
 })();
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- ONGLET 5 : EXPORT VIDÉO FINALE                                        -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-export">
+<header>
+  <div class="eyebrow">Karaoké Tahiti Studio</div>
+  <h1>Étape 5 — Export Vidéo Finale</h1>
+  <p class="subtitle">Assemble vidéo · paroles · accords · audio en un MP4 téléchargeable</p>
+</header>
+<main>
+
+  <section class="panel">
+    <p class="ptitle">1 · Fichiers source</p>
+    <div class="uploads">
+      <label class="dropzone"><input type="file" id="e-videoInput" accept="video/mp4,.mp4"><div class="dz-label">🎬 Vidéo de fond (MP4)</div><div class="dz-file" id="e-videoName">Aucun fichier</div></label>
+      <label class="dropzone"><input type="file" id="e-audioInput" accept="audio/*"><div class="dz-label">🎵 Audio mixé (MP3/WAV)</div><div class="dz-file" id="e-audioName">Aucun fichier</div></label>
+    </div>
+    <div style="margin-top:12px;">
+      <label class="upload-lbl" style="padding:10px;width:100%;">
+        <input type="file" id="e-jsonInput" accept=".json">
+        📥 Importer timestamps JSON (Étape 1)&nbsp;&nbsp;<span id="e-jsonName" style="color:var(--teal);font-size:11px;"></span>
+      </label>
+    </div>
+  </section>
+
+  <section class="panel">
+    <p class="ptitle">2 · Options d'export</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div>
+        <span class="field-label">Résolution</span>
+        <select id="e-resolution" style="width:100%;background:var(--bg-e);border:1px solid var(--line);border-radius:7px;color:var(--text);padding:8px;font-size:12px;">
+          <option value="1280x720">720p (1280×720)</option>
+          <option value="1920x1080">1080p (1920×1080)</option>
+          <option value="854x480">480p (854×480)</option>
+        </select>
+      </div>
+      <div>
+        <span class="field-label">Style des paroles</span>
+        <select id="e-lyricsStyle" style="width:100%;background:var(--bg-e);border:1px solid var(--line);border-radius:7px;color:var(--text);padding:8px;font-size:12px;">
+          <option value="bandeau">Bandeau bas</option>
+          <option value="centre">Centré</option>
+          <option value="karaoke">Style karaoké (couleur)</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="fx-check">
+        <input type="checkbox" id="e-showChords" checked>
+        <label for="e-showChords">Afficher les accords en haut</label>
+      </div>
+      <div class="fx-check">
+        <input type="checkbox" id="e-showTimecode">
+        <label for="e-showTimecode">Afficher le timecode</label>
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <span class="field-label">Couleur des paroles actives</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+        <button class="color-btn primary" data-color="#21D9C4" style="background:#21D9C4;color:#06201C;border-color:#21D9C4;">Turquoise</button>
+        <button class="color-btn" data-color="#F5C842" style="border-color:#F5C842;color:#F5C842;">Jaune</button>
+        <button class="color-btn" data-color="#FF6F59" style="border-color:#FF6F59;color:#FF6F59;">Corail</button>
+        <button class="color-btn" data-color="#ffffff" style="border-color:#fff;color:#fff;">Blanc</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <p class="ptitle">3 · Prévisualisation</p>
+    <div style="position:relative;background:#000;border-radius:8px;overflow:hidden;aspect-ratio:16/9;">
+      <video id="e-previewVideo" style="width:100%;height:100%;object-fit:cover;opacity:.6;" muted playsinline></video>
+      <canvas id="e-previewCanvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+    </div>
+    <div class="transport" style="margin-top:10px;">
+      <button class="play-btn primary" id="e-previewBtn" disabled>▶</button>
+      <input type="range" class="seekbar" id="e-previewSeek" min="0" max="100" value="0" disabled>
+      <span class="time-r" id="e-previewTime">00:00 / 00:00</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <p class="ptitle">4 · Export</p>
+    <div style="background:var(--surf2);border-radius:8px;padding:14px;margin-bottom:14px;font-size:12px;color:var(--dim);line-height:1.7;">
+      ⚠️ L'export vidéo se fait via le <strong style="color:var(--text);">Canvas + MediaRecorder</strong> dans le navigateur.
+      Le rendu se fait en temps réel — la durée d'export = durée de la vidéo.
+      Le fichier téléchargé sera un <strong style="color:var(--teal);">.webm</strong> lisible sur Chrome, VLC, et importable dans CapCut.
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <button id="e-exportBtn" class="primary" disabled style="font-size:15px;padding:14px 20px;">⬇ Lancer l'export MP4</button>
+      <button id="e-stopExportBtn" disabled>⏹ Arrêter</button>
+    </div>
+    <div style="margin-top:12px;">
+      <div style="height:8px;background:var(--line);border-radius:4px;overflow:hidden;">
+        <div id="e-progressBar" style="height:100%;width:0%;background:var(--teal);border-radius:4px;transition:width .3s;"></div>
+      </div>
+      <p class="hint" id="e-hint" style="margin-top:8px;">En attente — charge une vidéo, un audio et le JSON de l'Étape 1.</p>
+    </div>
+    <div class="confirm-banner" id="e-confirmBanner"></div>
+  </section>
+
+</main>
+</div>
+
+<script>
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ONGLET 5 : EXPORT VIDÉO FINALE
+// ═══════════════════════════════════════════════════════════════════════════
+(function initExport(){
+  let videoFile=null, audioFile=null, capturesData=null;
+  let activeColor='#21D9C4', isExporting=false, isPreviewPlaying=false;
+  let previewAudio=null, mediaRecorder=null, recordedChunks=[];
+
+  const videoInput   = document.getElementById('e-videoInput');
+  const audioInput   = document.getElementById('e-audioInput');
+  const jsonInput    = document.getElementById('e-jsonInput');
+  const videoName    = document.getElementById('e-videoName');
+  const audioName    = document.getElementById('e-audioName');
+  const jsonName     = document.getElementById('e-jsonName');
+  const previewVideo = document.getElementById('e-previewVideo');
+  const previewCanvas= document.getElementById('e-previewCanvas');
+  const previewBtn   = document.getElementById('e-previewBtn');
+  const previewSeek  = document.getElementById('e-previewSeek');
+  const previewTime  = document.getElementById('e-previewTime');
+  const exportBtn    = document.getElementById('e-exportBtn');
+  const stopExportBtn= document.getElementById('e-stopExportBtn');
+  const progressBar  = document.getElementById('e-progressBar');
+  const hint         = document.getElementById('e-hint');
+  const confirmBanner= document.getElementById('e-confirmBanner');
+  const showChords   = document.getElementById('e-showChords');
+  const showTimecode = document.getElementById('e-showTimecode');
+  const lyricsStyle  = document.getElementById('e-lyricsStyle');
+
+  const ctx = previewCanvas.getContext('2d');
+
+  function fmt(t){if(!isFinite(t)||t<0)return'00:00';return Math.floor(t/60).toString().padStart(2,'0')+':'+Math.floor(t%60).toString().padStart(2,'0');}
+  function flash(msg,ok){hint.textContent=msg;hint.classList.toggle('flash',!!ok);setTimeout(()=>hint.classList.remove('flash'),900);}
+  function showBanner(msg){confirmBanner.textContent=msg;confirmBanner.style.display='block';clearTimeout(showBanner._t);showBanner._t=setTimeout(()=>{confirmBanner.style.display='none';},4000);}
+
+  function checkReady(){
+    const ok = videoFile && audioFile && capturesData;
+    exportBtn.disabled = !ok;
+    previewBtn.disabled = !videoFile;
+    previewSeek.disabled = !videoFile;
+    if(ok) flash('Tout est prêt - lancez l export !', true);
+  }
+
+  // Couleurs
+  document.querySelectorAll('.color-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.color-btn').forEach(b=>{b.classList.remove('primary');b.style.background='';b.style.color=b.dataset.color;});
+      activeColor=btn.dataset.color;
+      btn.classList.add('primary');btn.style.background=btn.dataset.color;btn.style.color='#06201C';
+    });
+  });
+
+  // Uploads
+  videoInput.addEventListener('change',e=>{
+    const f=e.target.files[0];if(!f)return;
+    videoFile=f;videoName.textContent=f.name;
+    previewVideo.src=URL.createObjectURL(f);
+    previewVideo.addEventListener('loadedmetadata',()=>{
+      previewTime.textContent=fmt(0)+' / '+fmt(previewVideo.duration);
+      previewSeek.disabled=false;previewBtn.disabled=false;
+      resizeCanvas();
+    },{once:true});
+    checkReady();
+  });
+
+  audioInput.addEventListener('change',e=>{
+    const f=e.target.files[0];if(!f)return;
+    audioFile=f;audioName.textContent=f.name;
+    previewAudio=new Audio(URL.createObjectURL(f));
+    checkReady();
+  });
+
+  jsonInput.addEventListener('change',e=>{
+    const f=e.target.files[0];if(!f)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        capturesData=JSON.parse(ev.target.result);
+        jsonName.textContent=f.name+' ('+capturesData.captures.length+' syllabes)';
+        checkReady();
+        flash('JSON chargé — '+capturesData.captures.length+' syllabes.',true);
+      }catch(err){flash('Erreur JSON — vérifie le fichier.');}
+    };
+    reader.readAsText(f);
+  });
+
+  // Récupérer JSON depuis l'onglet Clipper si disponible
+  document.querySelector('[data-tab="export"]').addEventListener('click',()=>{
+    if(sharedData.capturesJSON && !capturesData){
+      capturesData=sharedData.capturesJSON;
+      jsonName.textContent='Reçu du Clipper ('+capturesData.captures.length+' syllabes)';
+      checkReady();
+    }
+  });
+
+  function resizeCanvas(){
+    const res=document.getElementById('e-resolution').value.split('x');
+    previewCanvas.width=+res[0];previewCanvas.height=+res[1];
+  }
+
+  // Obtenir la syllabe active à un instant t
+  function getActiveCapture(t){
+    if(!capturesData)return null;
+    let active=null;
+    for(let i=0;i<capturesData.captures.length;i++){
+      if(capturesData.captures[i].time<=t) active=capturesData.captures[i];
+      else break;
+    }
+    return active;
+  }
+
+  // Obtenir la ligne de paroles autour du mot actif
+  function getLyricsLine(activeIdx){
+    if(!capturesData)return{before:'',current:'',after:''};
+    const caps=capturesData.captures;
+    const words=caps.map(c=>c.word);
+    const start=Math.max(0,activeIdx-4);
+    const end=Math.min(words.length-1,activeIdx+6);
+    let before='',current='',after='';
+    for(let i=start;i<=end;i++){
+      if(i<activeIdx) before+=words[i]+' ';
+      else if(i===activeIdx) current=words[i];
+      else after+=' '+words[i];
+    }
+    return{before:before.trim(),current,after:after.trim()};
+  }
+
+  // Rendu d'une frame sur le canvas
+  function renderFrame(t){
+    const W=previewCanvas.width,H=previewCanvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    // Vidéo de fond
+    if(previewVideo.readyState>=2){
+      ctx.drawImage(previewVideo,0,0,W,H);
+      ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fillRect(0,0,W,H);
+    }
+
+    const active=getActiveCapture(t);
+    const style=lyricsStyle.value;
+
+    // Bandeau accords
+    if(showChords.checked && active && active.chord){
+      ctx.fillStyle='rgba(0,0,0,0.6)';
+      ctx.fillRect(0,0,W,H*0.12);
+      ctx.font='bold '+Math.round(H*0.07)+'px Space Grotesk, sans-serif';
+      ctx.fillStyle=activeColor;
+      ctx.textAlign='right';ctx.textBaseline='middle';
+      ctx.fillText(active.chord,W-W*0.03,H*0.06);
+    }
+
+    // Paroles
+    if(capturesData && active){
+      const line=getLyricsLine(active.index);
+      const fontSize=Math.round(H*0.055);
+      ctx.font='600 '+fontSize+'px Inter, sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='bottom';
+
+      if(style==='bandeau'||style==='karaoke'){
+        // Fond bandeau bas
+        const bH=H*0.22;
+        const grad=ctx.createLinearGradient(0,H-bH,0,H);
+        grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(1,'rgba(0,0,0,0.85)');
+        ctx.fillStyle=grad;ctx.fillRect(0,H-bH,W,bH);
+
+        const y=H-H*0.05;
+        const beforeW=ctx.measureText(line.before+' ').width;
+        const currentW=ctx.measureText(line.current).width;
+        const afterW=ctx.measureText(' '+line.after).width;
+        const totalW=beforeW+currentW+afterW;
+        let x=(W-totalW)/2;
+
+        // Avant
+        ctx.fillStyle='rgba(255,255,255,0.7)';
+        ctx.fillText(line.before+' ',x+beforeW/2,y);
+        x+=beforeW;
+        // Actif
+        if(style==='karaoke'){
+          const pad=8;
+          ctx.fillStyle=activeColor+'33';
+          ctx.fillRect(x-pad,y-fontSize-pad,currentW+pad*2,fontSize+pad*2);
+        }
+        ctx.fillStyle=activeColor;
+        ctx.fillText(line.current,x+currentW/2,y);
+        x+=currentW;
+        // Après
+        ctx.fillStyle='rgba(255,255,255,0.5)';
+        ctx.fillText(' '+line.after,x+afterW/2,y);
+
+      } else if(style==='centre'){
+        ctx.fillStyle=activeColor;
+        ctx.font='bold '+Math.round(H*0.07)+'px Space Grotesk, sans-serif';
+        ctx.fillText(line.current,W/2,H/2+H*0.05);
+        ctx.font='500 '+Math.round(H*0.04)+'px Inter, sans-serif';
+        ctx.fillStyle='rgba(255,255,255,0.6)';
+        ctx.fillText(line.before,W/2,H/2-H*0.03);
+        ctx.fillText(line.after,W/2,H/2+H*0.12);
+      }
+    }
+
+    // Timecode
+    if(showTimecode.checked){
+      ctx.font='500 '+Math.round(H*0.025)+'px JetBrains Mono, monospace';
+      ctx.fillStyle='rgba(255,255,255,0.4)';
+      ctx.textAlign='left';ctx.textBaseline='top';
+      ctx.fillText(fmt(t),W*0.02,H*0.02);
+    }
+  }
+
+  // Prévisualisation
+  let rafPreview=null;
+  function previewLoop(){
+    if(!isPreviewPlaying){rafPreview=null;return;}
+    renderFrame(previewVideo.currentTime);
+    previewSeek.value=previewVideo.duration?(previewVideo.currentTime/previewVideo.duration)*100:0;
+    previewTime.textContent=fmt(previewVideo.currentTime)+' / '+fmt(previewVideo.duration||0);
+    rafPreview=requestAnimationFrame(previewLoop);
+  }
+  previewBtn.addEventListener('click',()=>{
+    if(!videoFile)return;
+    resizeCanvas();
+    if(isPreviewPlaying){
+      previewVideo.pause();if(previewAudio)previewAudio.pause();
+      isPreviewPlaying=false;previewBtn.textContent='▶';
+    }else{
+      previewVideo.play();if(previewAudio){previewAudio.currentTime=previewVideo.currentTime;previewAudio.play();}
+      isPreviewPlaying=true;previewBtn.textContent='⏸';
+      previewLoop();
+    }
+  });
+  previewVideo.addEventListener('ended',()=>{isPreviewPlaying=false;previewBtn.textContent='▶';if(rafPreview){cancelAnimationFrame(rafPreview);rafPreview=null;}});
+  previewSeek.addEventListener('input',()=>{
+    if(previewVideo.duration){
+      previewVideo.currentTime=(+previewSeek.value/100)*previewVideo.duration;
+      if(previewAudio)previewAudio.currentTime=previewVideo.currentTime;
+      renderFrame(previewVideo.currentTime);
+    }
+  });
+
+  // Export
+  exportBtn.addEventListener('click',async()=>{
+    if(!videoFile||!audioFile||!capturesData)return;
+    resizeCanvas();
+    isExporting=true;exportBtn.disabled=true;stopExportBtn.disabled=false;
+    progressBar.style.width='0%';
+    flash('Export en cours — ne ferme pas la page...');
+    recordedChunks=[];
+
+    // Créer un MediaStream depuis le canvas
+    const canvasStream=previewCanvas.captureStream(30);
+
+    // Ajouter l'audio au stream
+    const audioCtxExp=new (window.AudioContext||window.webkitAudioContext)();
+    const audioSrc=audioCtxExp.createMediaElementSource(previewAudio);
+    const dest=audioCtxExp.createMediaStreamDestination();
+    audioSrc.connect(dest);audioSrc.connect(audioCtxExp.destination);
+    const audioTrack=dest.stream.getAudioTracks()[0];
+    if(audioTrack)canvasStream.addTrack(audioTrack);
+
+    // MediaRecorder
+    const mimeType=MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')?'video/webm;codecs=vp9,opus':'video/webm';
+    mediaRecorder=new MediaRecorder(canvasStream,{mimeType,videoBitsPerSecond:4000000});
+    mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recordedChunks.push(e.data);};
+    mediaRecorder.onstop=()=>{
+      const blob=new Blob(recordedChunks,{type:'video/webm'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      const title=(capturesData.song||'karaoke').replace(/\s+/g,'_').toLowerCase();
+      a.href=url;a.download=title+'_karaoke.webm';a.click();
+      URL.revokeObjectURL(url);
+      isExporting=false;exportBtn.disabled=false;stopExportBtn.disabled=true;
+      progressBar.style.width='100%';
+      showBanner('✅ Export terminé — fichier téléchargé !');
+      flash('Fichier .webm téléchargé — importable dans CapCut.',true);
+      audioCtxExp.close();
+    };
+
+    mediaRecorder.start(100);
+
+    // Lancer vidéo + audio depuis le début
+    previewVideo.currentTime=0;previewAudio.currentTime=0;
+    await previewVideo.play();previewAudio.play();
+
+    // Boucle de rendu
+    const duration=previewVideo.duration;
+    function exportLoop(){
+      if(!isExporting){mediaRecorder.stop();return;}
+      renderFrame(previewVideo.currentTime);
+      progressBar.style.width=((previewVideo.currentTime/duration)*100)+'%';
+      if(previewVideo.ended||previewVideo.currentTime>=duration-0.1){
+        mediaRecorder.stop();previewAudio.pause();return;
+      }
+      requestAnimationFrame(exportLoop);
+    }
+    exportLoop();
+  });
+
+  stopExportBtn.addEventListener('click',()=>{
+    isExporting=false;
+    if(mediaRecorder&&mediaRecorder.state!=='inactive')mediaRecorder.stop();
+    previewVideo.pause();if(previewAudio)previewAudio.pause();
+    exportBtn.disabled=false;stopExportBtn.disabled=true;
+    flash('Export annulé.');
+  });
+})();
+
+</script>
 </body>
 </html>
+<!-- PATCH ÉTAPE 5 injecté après </html> — sera fusionné proprement ensuite -->
