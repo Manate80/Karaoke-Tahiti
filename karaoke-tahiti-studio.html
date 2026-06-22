@@ -697,9 +697,16 @@ const sharedData = {
     if(document.fullscreenElement||document.webkitFullscreenElement){
       (document.exitFullscreen||document.webkitExitFullscreen).call(document);
       fullscreenBtn.textContent='⛶';
+      // Revenir en portrait
+      try{ screen.orientation.unlock(); }catch(e){}
     } else {
       const req = stage.requestFullscreen||stage.webkitRequestFullscreen;
-      if(req) req.call(stage);
+      if(req){
+        req.call(stage).then(()=>{
+          // Forcer le paysage après plein écran
+          try{ screen.orientation.lock('landscape').catch(()=>{}); }catch(e){}
+        }).catch(()=>{});
+      }
       fullscreenBtn.textContent='✕';
     }
   });
