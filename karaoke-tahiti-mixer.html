@@ -280,7 +280,27 @@ function buildGraph(id){
   t.analyser.connect(masterGain);
 
   applyEQ(id);
-  return t.eqLow; // entrée du graphe
+  // Noise Gate via ScriptProcessor (analyse RMS → coupe le signal)
+  t.gateProc = audioCtx.createScriptProcessor(2048, 1, 1);
+  t.gateDryGain = audioCtx.createGain(); t.gateDryGain.gain.value = 1;
+  t.gateProc.onaudioprocess = ev => {
+    if (!t.fx.gateOn) { 
+      const inp = ev.inputBuffer.getChannelData(0);
+      const out = ev.outputBuffer.getChannelData(0);
+      for(let i=0;i<inp.length;i++) out[i]=inp[i];
+      return;
+    }
+    const inp = ev.inputBuffer.getChannelData(0);
+    const out = ev.outputBuffer.getChannelData(0);
+    let rms = 0;
+    for(let i=0;i<inp.length;i++) rms += inp[i]*inp[i];
+    rms = Math.sqrt(rms/inp.length);
+    const open = rms > t.fx.gateThresh;
+    for(let i=0;i<inp.length;i++) out[i] = open ? inp[i] : inp[i]*0.02;
+  };
+  t.eqLow.connect(t.gateProc);
+  t.gateProc.connect(t.eqHigh);
+  return t.gateProc; // entrée du graphe
 }
 
 function applyEQ(id){
@@ -297,7 +317,7 @@ TRACKS.forEach(cfg=>{
     buffer:null,sources:[],gainNode:null,analyser:null,
     muted:false,soloed:false,vol:85,
     mediaRecorder:null,recordingChunks:[],isRecording:false,
-    fx:{eqLow:0,eqMid:0,eqHigh:0,delayTime:0.35,delayFeedback:0,delayWet:0,reverbWet:0,robotOn:false}
+    fx:{eqLow:0,eqMid:0,eqHigh:0,delayTime:0.35,delayFeedback:0,delayWet:0,reverbWet:0,robotOn:false,gateOn:false,gateThresh:0.15,gateAttack:0.01}
   };
 
   const row=document.createElement('div');
@@ -326,7 +346,7 @@ TRACKS.forEach(cfg=>{
         <input type="file" accept="audio/*" data-track="${cfg.id}">📂
       </label>
     </div>
-    <button class="fx-toggle" id="fxtoggle-${cfg.id}">▸ Effets (EQ · Écho · Réverb · Robot)</button>
+    <button class="fx-toggle" id="fxtoggle-${cfg.id}">▸ Effets (EQ · Écho · Réverb · Robot · Gate)</button>
     <div class="fx-panel" id="fxpanel-${cfg.id}">
       <div class="fx-grid">
         <!-- EQ -->
@@ -371,6 +391,22 @@ TRACKS.forEach(cfg=>{
             <input type="checkbox" id="robot-${cfg.id}">
             <label for="robot-${cfg.id}">🤖 Effet Robot</label>
           </div>
+          <!-- Noise Gate -->
+          <div class="fx-title" style="margin-top:8px;">Noise Gate</div>
+          <div class="fx-check">
+            <input type="checkbox" id="gate-on-${cfg.id}">
+            <label for="gate-on-${cfg.id}">🔇 Activer le gate</label>
+          </div>
+          <div class="fx-row">
+            <span class="fx-label">Seuil</span>
+            <input type="range" class="fx-slider" min="0" max="100" value="15" id="gate-thresh-${cfg.id}">
+            <span class="fx-val" id="gatethreshval-${cfg.id}">15%</span>
+          </div>
+          <div class="fx-row">
+            <span class="fx-label">Attaque</span>
+            <input type="range" class="fx-slider" min="1" max="100" value="10" id="gate-attack-${cfg.id}">
+            <span class="fx-val" id="gateattackval-${cfg.id}">10ms</span>
+          </div>
         </div>
       </div>
     </div>
@@ -382,7 +418,7 @@ TRACKS.forEach(cfg=>{
     const p=document.getElementById('fxpanel-'+cfg.id);
     const btn=document.getElementById('fxtoggle-'+cfg.id);
     p.classList.toggle('open');
-    btn.textContent=p.classList.contains('open')?'▾ Effets (EQ · Écho · Réverb · Robot)':'▸ Effets (EQ · Écho · Réverb · Robot)';
+    btn.textContent=p.classList.contains('open')?'▾ Effets (EQ · Écho · Réverb · Robot · Gate)':'▸ Effets (EQ · Écho · Réverb · Robot · Gate)';
   });
 
   // Volume
@@ -407,6 +443,22 @@ TRACKS.forEach(cfg=>{
     document.getElementById('solo-'+cfg.id).classList.toggle('active-solo',t.soloed);
     row.classList.toggle('soloed',t.soloed);
     applyGains(); flash(t.soloed?cfg.name+' solo':'Solo annulé');
+  });
+
+  // Noise Gate listeners
+  document.getElementById('gate-on-'+cfg.id).addEventListener('change',e=>{
+    tracks[cfg.id].fx.gateOn=e.target.checked;
+    flash(e.target.checked?cfg.name+' : gate activé 🔇':cfg.name+' : gate désactivé');
+  });
+  document.getElementById('gate-thresh-'+cfg.id).addEventListener('input',e=>{
+    const v=+e.target.value;
+    document.getElementById('gatethreshval-'+cfg.id).textContent=v+'%';
+    tracks[cfg.id].fx.gateThresh=v/100;
+  });
+  document.getElementById('gate-attack-'+cfg.id).addEventListener('input',e=>{
+    const v=+e.target.value;
+    document.getElementById('gateattackval-'+cfg.id).textContent=v+'ms';
+    tracks[cfg.id].fx.gateAttack=v/1000;
   });
 
   // EQ
