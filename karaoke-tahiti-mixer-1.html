@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Karaoké Tahiti Studio — Étape 2 : Mixeur Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0D10;--bg-e:#11161B;--surf:#161D24;--surf2:#1C2530;
+  --line:#232E38;--teal:#21D9C4;--teal-dim:#0F6F64;--teal-glow:rgba(33,217,196,0.3);
+  --coral:#FF6F59;--yellow:#F5C842;--purple:#A78BFA;--green:#4ADE80;--orange:#F97316;
+  --text:#E8EDEF;--dim:#8694A0;--faint:#4B5862;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+header{max-width:980px;margin:0 auto;padding:28px 24px 0;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--teal);text-transform:uppercase;}
+h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(20px,4vw,30px);margin:4px 0 2px;}
+.subtitle{color:var(--dim);font-size:13px;margin-bottom:16px;}
+.strings{display:flex;flex-direction:column;gap:8px;margin:8px 0 18px;}
+.string-row{display:flex;align-items:center;gap:10px;}
+.string-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);width:14px;}
+.string-line{flex:1;background:var(--line);border-radius:2px;}
+.string-row:nth-child(1) .string-line{height:3px;}
+.string-row:nth-child(2) .string-line{height:2.5px;}
+.string-row:nth-child(3) .string-line{height:2px;}
+.string-row:nth-child(4) .string-line{height:1.5px;}
+body.playing .string-line{background:var(--teal-dim);animation:vibrate .55s ease-in-out infinite;}
+body.playing .string-row:nth-child(2) .string-line{animation-delay:.07s;}
+body.playing .string-row:nth-child(3) .string-line{animation-delay:.14s;}
+body.playing .string-row:nth-child(4) .string-line{animation-delay:.21s;}
+@keyframes vibrate{0%,100%{transform:scaleY(1);}50%{transform:scaleY(2.4);background:var(--teal);box-shadow:0 0 8px var(--teal-glow);}}
+main{max-width:980px;margin:0 auto;padding:0 24px 60px;display:flex;flex-direction:column;gap:16px;}
+.panel{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:16px;}
+.ptitle{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:12px;}
+button{font-family:'Inter',sans-serif;font-weight:600;font-size:12px;border-radius:7px;border:1px solid var(--line);background:var(--surf2);color:var(--text);padding:8px 12px;cursor:pointer;transition:border-color .15s,background .15s;}
+button:hover:not(:disabled){border-color:var(--teal-dim);}
+button:disabled{opacity:.4;cursor:not-allowed;}
+button.primary{background:var(--teal);color:#06201C;border-color:var(--teal);}
+button.primary:hover:not(:disabled){background:#3CE9D4;}
+button.active-mute{background:var(--coral);color:#fff;border-color:var(--coral);}
+button.active-solo{background:var(--yellow);color:#111;border-color:var(--yellow);}
+button.active-rec{background:#ff2244;color:#fff;border-color:#ff2244;animation:recpulse 1s ease-in-out infinite;}
+@keyframes recpulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+button:focus-visible{outline:2px solid var(--teal);outline-offset:2px;}
+/* Transport */
+.transport{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.play-btn{width:46px;height:46px;padding:0;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+input[type=range]{accent-color:var(--teal);}
+.seekbar{flex:1;min-width:80px;}
+.time-r{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);min-width:96px;text-align:right;}
+.hint{margin-top:10px;font-size:12px;color:var(--dim);min-height:16px;}
+.hint.flash{color:var(--teal);}
+/* Master volume */
+.master-row{display:flex;align-items:center;gap:12px;margin-top:12px;}
+.master-row label{font-size:12px;color:var(--dim);flex-shrink:0;}
+.master-row input{flex:1;}
+.master-val{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--teal);min-width:32px;text-align:right;}
+/* Banner */
+#confirmBanner{display:none;margin-top:10px;background:var(--teal);color:#06201C;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;padding:10px 14px;border-radius:8px;text-align:center;}
+/* Stats */
+.stats-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;}
+.stat-item{display:flex;flex-direction:column;gap:2px;}
+.stat-label{font-size:10px;color:var(--faint);}
+.stat-val{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;color:var(--teal);}
+/* Tracks */
+.tracks{display:flex;flex-direction:column;gap:10px;}
+.track{background:var(--bg-e,#11161B);border:1px solid var(--line);border-radius:8px;overflow:hidden;transition:border-color .15s;}
+.track.has-file{border-color:var(--teal-dim);}
+.track.muted{opacity:.45;}
+.track.soloed{border-color:var(--yellow);}
+.track.recording{border-color:#ff2244;box-shadow:0 0 12px rgba(255,34,68,.3);}
+/* Track header */
+.track-header{display:grid;grid-template-columns:6px 1fr auto auto auto auto auto;align-items:center;gap:8px;padding:10px 12px;}
+.track-color{width:6px;height:32px;border-radius:3px;flex-shrink:0;}
+.track-info{min-width:0;}
+.track-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;}
+.track-file{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+/* VU */
+.vu-wrap{display:flex;flex-direction:column;gap:3px;}
+.vu-bar{width:60px;height:5px;background:var(--line);border-radius:3px;overflow:hidden;}
+.vu-fill{height:100%;width:0%;border-radius:3px;transition:width .05s linear;}
+/* Volume */
+.vol-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.vol-slider{writing-mode:vertical-lr;direction:rtl;height:52px;}
+.vol-val{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);}
+/* Buttons */
+.ms-wrap{display:flex;flex-direction:column;gap:5px;}
+.ms-btn{padding:5px 8px;font-size:10px;font-weight:700;}
+/* Upload */
+.upload-lbl{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:7px;border:1px dashed var(--line);background:var(--surf2);cursor:pointer;font-size:18px;flex-shrink:0;}
+.upload-lbl:hover{border-color:var(--teal-dim);}
+.upload-lbl input{display:none;}
+.track.has-file .upload-lbl{border-color:var(--teal);background:rgba(33,217,196,.08);}
+/* Rec button */
+.rec-btn{padding:5px 8px;font-size:10px;font-weight:700;color:var(--coral);border-color:var(--coral);}
+.rec-btn.active-rec{background:#ff2244;color:#fff;border-color:#ff2244;}
+/* Effects panel */
+.fx-toggle{background:none;border:none;color:var(--dim);font-size:11px;padding:4px 12px 8px;cursor:pointer;display:block;width:100%;text-align:left;}
+.fx-toggle:hover{color:var(--teal);}
+.fx-panel{display:none;padding:0 12px 12px;border-top:1px solid var(--line);}
+.fx-panel.open{display:block;}
+.fx-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fx-section{background:var(--surf2);border-radius:6px;padding:10px;}
+.fx-title{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:8px;letter-spacing:.08em;text-transform:uppercase;}
+.fx-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.fx-label{font-size:10px;color:var(--faint);min-width:38px;}
+.fx-slider{flex:1;height:4px;}
+.fx-val{font-size:10px;color:var(--teal);min-width:28px;text-align:right;font-family:'JetBrains Mono',monospace;}
+.fx-check{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.fx-check input[type=checkbox]{accent-color:var(--teal);width:14px;height:14px;}
+.fx-check label{font-size:11px;color:var(--dim);}
+/* Actions globales */
+.actions-wrap{display:flex;gap:8px;flex-wrap:wrap;}
+/* Tap btn */
+#tapBtn{width:100%;padding:14px;font-size:15px;margin-top:10px;}
+@media(max-width:600px){
+  header,main{padding-left:14px;padding-right:14px;}
+  .vu-wrap{display:none;}
+  .fx-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">Karaoké Tahiti Studio</div>
+  <h1>Étape 2 — Mixeur Pro</h1>
+  <p class="subtitle">6 pistes · Effets par piste · Enregistrement micro</p>
+  <div class="strings">
+    <div class="string-row"><span class="string-label">G</span><div class="string-line"></div></div>
+    <div class="string-row"><span class="string-label">C</span><div class="string-line"></div></div>
+    <div class="string-row"><span class="string-label">E</span><div class="string-line"></div></div>
+    <div class="string-row"><span class="string-label">A</span><div class="string-line"></div></div>
+  </div>
+</header>
+<main>
+
+<!-- Transport global -->
+<section class="panel">
+  <p class="ptitle">Lecture globale</p>
+  <div class="transport">
+    <button class="play-btn primary" id="playBtn" disabled>▶</button>
+    <input type="range" class="seekbar" id="seekBar" min="0" max="100" value="0" disabled>
+    <span class="time-r" id="timeReadout">00:00 / 00:00</span>
+  </div>
+  <div class="master-row">
+    <label>Volume général</label>
+    <input type="range" id="masterVol" min="0" max="150" value="100">
+    <span class="master-val" id="masterValDisplay">100%</span>
+  </div>
+  <button id="tapBtn" class="primary" disabled>▶ Taper pour lancer</button>
+  <div id="confirmBanner"></div>
+  <p class="hint" id="hint">Charge un MP3 sur une piste ou enregistre via le micro 🎙</p>
+  <div class="stats-row">
+    <div class="stat-item"><span class="stat-label">Pistes actives</span><span class="stat-val" id="statLoaded">0/6</span></div>
+    <div class="stat-item"><span class="stat-label">Durée max</span><span class="stat-val" id="statDur">—</span></div>
+    <div class="stat-item"><span class="stat-label">Sync</span><span class="stat-val" id="statSync" style="color:var(--dim)">En attente</span></div>
+  </div>
+</section>
+
+<!-- Pistes -->
+<section class="panel">
+  <p class="ptitle">Pistes</p>
+  <div class="tracks" id="trackList"></div>
+</section>
+
+<!-- Étapes 3+4 : BPM Sync + Basse Harmonique -->
+<section class="panel">
+  <p class="ptitle">Étapes 3+4 — Basse synthétique (BPM + Accords)</p>
+
+  <!-- Détection BPM -->
+  <div style="margin-bottom:14px;">
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px;">1 · Détection du tempo</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <button id="detectBpmBtn" class="primary">🥁 Détecter le BPM (piste Percussion)</button>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--teal);" id="bpmDisplay">— BPM</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
+      <span style="font-size:12px;color:var(--dim);">Ou entre le BPM manuellement :</span>
+      <input type="number" id="bpmManual" min="40" max="240" value="100" style="width:70px;background:var(--bg-e);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:6px 8px;font-size:13px;">
+      <button id="bpmManualBtn">Appliquer</button>
+    </div>
+  </div>
+
+  <!-- Style rythmique -->
+  <div style="margin-bottom:14px;">
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px;">2 · Style de basse</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="style-btn primary" data-style="roulant">🌊 Roulant</button>
+      <button class="style-btn" data-style="himene">🎵 Himène</button>
+      <button class="style-btn" data-style="slow">🌙 Slow</button>
+      <button class="style-btn" data-style="upbeat">⚡ Upbeat</button>
+    </div>
+  </div>
+
+  <!-- Grille d'accords -->
+  <div style="margin-bottom:14px;">
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px;">3 · Grille d'accords</div>
+    <textarea id="chordGrid" style="width:100%;background:var(--bg-e);border:1px solid var(--line);border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px;min-height:80px;resize:vertical;" placeholder="Format : temps(secondes) ACCORD&#10;0 Am&#10;8 C&#10;16 G7&#10;24 Am"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:6px;background:var(--surf2);border:1px solid var(--line);border-radius:7px;padding:8px 12px;cursor:pointer;font-size:12px;">
+        📥 Importer JSON (Étape 1)
+        <input type="file" id="jsonImport" accept=".json" style="display:none;">
+      </label>
+      <button id="clearChordBtn">Effacer</button>
+    </div>
+  </div>
+
+  <!-- Contrôle basse -->
+  <div style="margin-bottom:14px;">
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px;">4 · Contrôle de la basse synthétique</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <button id="startBassBtn" class="primary" disabled>▶ Lancer la basse</button>
+      <button id="stopBassBtn" disabled>⏹ Arrêter</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:12px;color:var(--dim);">Volume basse</span>
+        <input type="range" id="bassVolume" min="0" max="100" value="70" style="width:80px;accent-color:var(--teal);">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--teal);" id="bassVolVal">70%</span>
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--dim);" id="bassStatus">En attente — détecte le BPM et charge une grille d'accords.</div>
+  </div>
+</section>
+
+<!-- Actions globales -->
+<section class="panel">
+  <p class="ptitle">Actions globales</p>
+  <div class="actions-wrap">
+    <button id="unmuteAllBtn">Réactiver tout</button>
+    <button id="unsoloAllBtn">Annuler solos</button>
+    <button id="resetAllBtn">Réinitialiser</button>
+  </div>
+</section>
+
+</main>
+<script>
+// ─── Config pistes ────────────────────────────────────────────────────────
+const TRACKS = [
+  {id:'voix',   name:'Voix',       color:'#21D9C4'},
+  {id:'uke1',   name:'Ukulélé 1',  color:'#F5C842'},
+  {id:'uke2',   name:'Ukulélé 2',  color:'#A78BFA'},
+  {id:'guitare',name:'Guitare',    color:'#FF6F59'},
+  {id:'basse',  name:'Basse',      color:'#4ADE80'},
+  {id:'perc',   name:'Percussion', color:'#F97316'},
+];
+
+// ─── Audio Context ────────────────────────────────────────────────────────
+const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+const masterGain = audioCtx.createGain();
+masterGain.connect(audioCtx.destination);
+
+let isPlaying=false, isSeeking=false;
+let masterDuration=0, startTime=0, startOffset=0, rafId=null;
+let tracks={};
+
+// ─── DOM ──────────────────────────────────────────────────────────────────
+const playBtn=document.getElementById('playBtn');
+const tapBtn=document.getElementById('tapBtn');
+const seekBar=document.getElementById('seekBar');
+const timeReadout=document.getElementById('timeReadout');
+const hint=document.getElementById('hint');
+const confirmBanner=document.getElementById('confirmBanner');
+const statLoaded=document.getElementById('statLoaded');
+const statDur=document.getElementById('statDur');
+const statSync=document.getElementById('statSync');
+const masterVolSlider=document.getElementById('masterVol');
+const masterValDisplay=document.getElementById('masterValDisplay');
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
+function fmt(t){if(!isFinite(t)||t<0)return'00:00';return Math.floor(t/60).toString().padStart(2,'0')+':'+Math.floor(t%60).toString().padStart(2,'0');}
+function flash(msg){hint.textContent=msg;hint.classList.add('flash');clearTimeout(flash._t);flash._t=setTimeout(()=>hint.classList.remove('flash'),900);}
+function showBanner(msg){confirmBanner.textContent=msg;confirmBanner.style.display='block';clearTimeout(showBanner._t);showBanner._t=setTimeout(()=>confirmBanner.style.display='none',3000);}
+function loadedCount(){return Object.values(tracks).filter(t=>t.buffer).length;}
+function currentPos(){return isPlaying?startOffset+(audioCtx.currentTime-startTime):startOffset;}
+function enableTransport(){playBtn.disabled=false;tapBtn.disabled=false;seekBar.disabled=false;}
+
+// ─── Master volume ─────────────────────────────────────────────────────────
+masterVolSlider.addEventListener('input',()=>{
+  const v=+masterVolSlider.value;
+  masterGain.gain.value=v/100;
+  masterValDisplay.textContent=v+'%';
+});
+
+// ─── Création d'une impulsion de réverb synthétique ───────────────────────
+function createImpulse(duration=2, decay=2){
+  const sr=audioCtx.sampleRate;
+  const len=sr*duration;
+  const buf=audioCtx.createBuffer(2,len,sr);
+  for(let c=0;c<2;c++){
+    const d=buf.getChannelData(c);
+    for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay);
+  }
+  return buf;
+}
+const reverbImpulse=createImpulse(2.5,2.5);
+
+// ─── Construction du graphe audio d'une piste ─────────────────────────────
+// Signal: source → EQ (3 bandes) → Delay → Reverb (wet) → Robot → Gain → MasterGain
+function buildGraph(id){
+  const t=tracks[id];
+  if(t.gainNode){t.gainNode.disconnect();}
+
+  // EQ
+  t.eqLow=audioCtx.createBiquadFilter(); t.eqLow.type='lowshelf'; t.eqLow.frequency.value=250;
+  t.eqMid=audioCtx.createBiquadFilter(); t.eqMid.type='peaking';  t.eqMid.frequency.value=1000; t.eqMid.Q.value=1;
+  t.eqHigh=audioCtx.createBiquadFilter();t.eqHigh.type='highshelf';t.eqHigh.frequency.value=4000;
+  t.eqLow.connect(t.eqMid); t.eqMid.connect(t.eqHigh);
+
+  // Delay / Echo
+  t.delayNode=audioCtx.createDelay(2.0); t.delayNode.delayTime.value=t.fx.delayTime||0.35;
+  t.delayFeedback=audioCtx.createGain(); t.delayFeedback.gain.value=t.fx.delayFeedback||0;
+  t.delayWet=audioCtx.createGain(); t.delayWet.gain.value=t.fx.delayWet||0;
+  t.eqHigh.connect(t.delayNode);
+  t.delayNode.connect(t.delayFeedback); t.delayFeedback.connect(t.delayNode);
+  t.delayNode.connect(t.delayWet);
+
+  // Réverb
+  t.reverbNode=audioCtx.createConvolver(); t.reverbNode.buffer=reverbImpulse;
+  t.reverbWet=audioCtx.createGain(); t.reverbWet.gain.value=t.fx.reverbWet||0;
+  t.eqHigh.connect(t.reverbNode); t.reverbNode.connect(t.reverbWet);
+
+  // Effet Robot (ring modulation avec oscillateur)
+  t.robotOsc=audioCtx.createOscillator(); t.robotOsc.frequency.value=50;
+  t.robotGain=audioCtx.createGain(); t.robotGain.gain.value=t.fx.robotOn?1:0;
+  t.robotOsc.connect(t.robotGain); t.robotOsc.start();
+
+  // Gain de piste + analyser
+  t.gainNode=audioCtx.createGain(); t.gainNode.gain.value=t.vol/100;
+  t.analyser=audioCtx.createAnalyser(); t.analyser.fftSize=256;
+
+  // Connexions finales
+  t.eqHigh.connect(t.gainNode);
+  t.delayWet.connect(t.gainNode);
+  t.reverbWet.connect(t.gainNode);
+  t.robotGain.connect(t.gainNode);
+  t.gainNode.connect(t.analyser);
+  t.analyser.connect(masterGain);
+
+  applyEQ(id);
+  // Noise Gate via ScriptProcessor (analyse RMS → coupe le signal)
+  t.gateProc = audioCtx.createScriptProcessor(2048, 1, 1);
+  t.gateDryGain = audioCtx.createGain(); t.gateDryGain.gain.value = 1;
+  t.gateProc.onaudioprocess = ev => {
+    if (!t.fx.gateOn) { 
+      const inp = ev.inputBuffer.getChannelData(0);
+      const out = ev.outputBuffer.getChannelData(0);
+      for(let i=0;i<inp.length;i++) out[i]=inp[i];
+      return;
+    }
+    const inp = ev.inputBuffer.getChannelData(0);
+    const out = ev.outputBuffer.getChannelData(0);
+    let rms = 0;
+    for(let i=0;i<inp.length;i++) rms += inp[i]*inp[i];
+    rms = Math.sqrt(rms/inp.length);
+    const open = rms > t.fx.gateThresh;
+    for(let i=0;i<inp.length;i++) out[i] = open ? inp[i] : inp[i]*0.02;
+  };
+  t.eqLow.connect(t.gateProc);
+  t.gateProc.connect(t.eqHigh);
+  return t.gateProc; // entrée du graphe
+}
+
+function applyEQ(id){
+  const t=tracks[id];
+  if(!t.eqLow) return;
+  t.eqLow.gain.value=t.fx.eqLow||0;
+  t.eqMid.gain.value=t.fx.eqMid||0;
+  t.eqHigh.gain.value=t.fx.eqHigh||0;
+}
+
+// ─── Construction de l'interface des pistes ───────────────────────────────
+TRACKS.forEach(cfg=>{
+  tracks[cfg.id]={
+    buffer:null,sources:[],gainNode:null,analyser:null,
+    muted:false,soloed:false,vol:85,
+    mediaRecorder:null,recordingChunks:[],isRecording:false,
+    fx:{eqLow:0,eqMid:0,eqHigh:0,delayTime:0.35,delayFeedback:0,delayWet:0,reverbWet:0,robotOn:false,gateOn:false,gateThresh:0.15,gateAttack:0.01}
+  };
+
+  const row=document.createElement('div');
+  row.className='track'; row.id='row-'+cfg.id;
+  row.innerHTML=`
+    <div class="track-header">
+      <div class="track-color" style="background:${cfg.color}"></div>
+      <div class="track-info">
+        <div class="track-name">${cfg.name}</div>
+        <div class="track-file" id="file-${cfg.id}">Aucun fichier</div>
+        <div class="vu-wrap" style="margin-top:4px;">
+          <div class="vu-bar"><div class="vu-fill" id="vu1-${cfg.id}" style="background:${cfg.color}"></div></div>
+          <div class="vu-bar"><div class="vu-fill" id="vu2-${cfg.id}" style="background:${cfg.color}"></div></div>
+        </div>
+      </div>
+      <div class="vol-wrap">
+        <input type="range" class="vol-slider" min="0" max="150" value="85" id="vol-${cfg.id}" style="accent-color:${cfg.color};">
+        <span class="vol-val" id="volval-${cfg.id}">85%</span>
+      </div>
+      <div class="ms-wrap">
+        <button class="ms-btn" id="mute-${cfg.id}">M</button>
+        <button class="ms-btn" id="solo-${cfg.id}">S</button>
+      </div>
+      <button class="ms-btn rec-btn" id="rec-${cfg.id}" title="Enregistrer">🎙</button>
+      <label class="upload-lbl" title="Charger MP3/WAV">
+        <input type="file" accept="audio/*" data-track="${cfg.id}">📂
+      </label>
+    </div>
+    <button class="fx-toggle" id="fxtoggle-${cfg.id}">▸ Effets (EQ · Écho · Réverb · Robot · Gate)</button>
+    <div class="fx-panel" id="fxpanel-${cfg.id}">
+      <div class="fx-grid">
+        <!-- EQ -->
+        <div class="fx-section">
+          <div class="fx-title">Égaliseur</div>
+          <div class="fx-row">
+            <span class="fx-label">Graves</span>
+            <input type="range" class="fx-slider" min="-15" max="15" value="0" id="eq-low-${cfg.id}">
+            <span class="fx-val" id="eqlowval-${cfg.id}">0dB</span>
+          </div>
+          <div class="fx-row">
+            <span class="fx-label">Médiums</span>
+            <input type="range" class="fx-slider" min="-15" max="15" value="0" id="eq-mid-${cfg.id}">
+            <span class="fx-val" id="eqmidval-${cfg.id}">0dB</span>
+          </div>
+          <div class="fx-row">
+            <span class="fx-label">Aigus</span>
+            <input type="range" class="fx-slider" min="-15" max="15" value="0" id="eq-high-${cfg.id}">
+            <span class="fx-val" id="eqhighval-${cfg.id}">0dB</span>
+          </div>
+        </div>
+        <!-- Echo + Reverb -->
+        <div class="fx-section">
+          <div class="fx-title">Écho / Réverb</div>
+          <div class="fx-row">
+            <span class="fx-label">Écho</span>
+            <input type="range" class="fx-slider" min="0" max="100" value="0" id="delay-wet-${cfg.id}">
+            <span class="fx-val" id="delaywetval-${cfg.id}">0%</span>
+          </div>
+          <div class="fx-row">
+            <span class="fx-label">Rép.</span>
+            <input type="range" class="fx-slider" min="0" max="80" value="0" id="delay-fb-${cfg.id}">
+            <span class="fx-val" id="delayfbval-${cfg.id}">0%</span>
+          </div>
+          <div class="fx-row">
+            <span class="fx-label">Réverb</span>
+            <input type="range" class="fx-slider" min="0" max="100" value="0" id="reverb-${cfg.id}">
+            <span class="fx-val" id="reverbval-${cfg.id}">0%</span>
+          </div>
+          <!-- Robot -->
+          <div class="fx-check">
+            <input type="checkbox" id="robot-${cfg.id}">
+            <label for="robot-${cfg.id}">🤖 Effet Robot</label>
+          </div>
+          <!-- Noise Gate -->
+          <div class="fx-title" style="margin-top:8px;">Noise Gate</div>
+          <div class="fx-check">
+            <input type="checkbox" id="gate-on-${cfg.id}">
+            <label for="gate-on-${cfg.id}">🔇 Activer le gate</label>
+          </div>
+          <div class="fx-row">
+            <span class="fx-label">Seuil</span>
+            <input type="range" class="fx-slider" min="0" max="100" value="15" id="gate-thresh-${cfg.id}">
+            <span class="fx-val" id="gatethreshval-${cfg.id}">15%</span>
+          </div>
+          <div class="fx-row">
+            <span class="fx-label">Attaque</span>
+            <input type="range" class="fx-slider" min="1" max="100" value="10" id="gate-attack-${cfg.id}">
+            <span class="fx-val" id="gateattackval-${cfg.id}">10ms</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('trackList').appendChild(row);
+
+  // Toggle effets
+  document.getElementById('fxtoggle-'+cfg.id).addEventListener('click',()=>{
+    const p=document.getElementById('fxpanel-'+cfg.id);
+    const btn=document.getElementById('fxtoggle-'+cfg.id);
+    p.classList.toggle('open');
+    btn.textContent=p.classList.contains('open')?'▾ Effets (EQ · Écho · Réverb · Robot · Gate)':'▸ Effets (EQ · Écho · Réverb · Robot · Gate)';
+  });
+
+  // Volume
+  const volSl=document.getElementById('vol-'+cfg.id);
+  const volVl=document.getElementById('volval-'+cfg.id);
+  volSl.addEventListener('input',()=>{
+    const v=+volSl.value; tracks[cfg.id].vol=v; volVl.textContent=v+'%';
+    if(tracks[cfg.id].gainNode) tracks[cfg.id].gainNode.gain.value=v/100;
+  });
+
+  // Mute
+  document.getElementById('mute-'+cfg.id).addEventListener('click',()=>{
+    const t=tracks[cfg.id]; t.muted=!t.muted;
+    document.getElementById('mute-'+cfg.id).classList.toggle('active-mute',t.muted);
+    row.classList.toggle('muted',t.muted);
+    applyGains(); flash(t.muted?cfg.name+' muté':cfg.name+' actif');
+  });
+
+  // Solo
+  document.getElementById('solo-'+cfg.id).addEventListener('click',()=>{
+    const t=tracks[cfg.id]; t.soloed=!t.soloed;
+    document.getElementById('solo-'+cfg.id).classList.toggle('active-solo',t.soloed);
+    row.classList.toggle('soloed',t.soloed);
+    applyGains(); flash(t.soloed?cfg.name+' solo':'Solo annulé');
+  });
+
+  // Noise Gate listeners
+  document.getElementById('gate-on-'+cfg.id).addEventListener('change',e=>{
+    tracks[cfg.id].fx.gateOn=e.target.checked;
+    flash(e.target.checked?cfg.name+' : gate activé 🔇':cfg.name+' : gate désactivé');
+  });
+  document.getElementById('gate-thresh-'+cfg.id).addEventListener('input',e=>{
+    const v=+e.target.value;
+    document.getElementById('gatethreshval-'+cfg.id).textContent=v+'%';
+    tracks[cfg.id].fx.gateThresh=v/100;
+  });
+  document.getElementById('gate-attack-'+cfg.id).addEventListener('input',e=>{
+    const v=+e.target.value;
+    document.getElementById('gateattackval-'+cfg.id).textContent=v+'ms';
+    tracks[cfg.id].fx.gateAttack=v/1000;
+  });
+
+  // EQ
+  ['low','mid','high'].forEach(band=>{
+    const sl=document.getElementById('eq-'+band+'-'+cfg.id);
+    const vl=document.getElementById('eq'+band+'val-'+cfg.id);
+    sl.addEventListener('input',()=>{
+      const v=+sl.value; vl.textContent=v+'dB';
+      tracks[cfg.id].fx['eq'+band.charAt(0).toUpperCase()+band.slice(1)]=v;
+      applyEQ(cfg.id);
+    });
+  });
+
+  // Delay wet
+  document.getElementById('delay-wet-'+cfg.id).addEventListener('input',e=>{
+    const v=+e.target.value; document.getElementById('delaywetval-'+cfg.id).textContent=v+'%';
+    tracks[cfg.id].fx.delayWet=v/100;
+    if(tracks[cfg.id].delayWet) tracks[cfg.id].delayWet.gain.value=v/100;
+  });
+
+  // Delay feedback
+  document.getElementById('delay-fb-'+cfg.id).addEventListener('input',e=>{
+    const v=+e.target.value; document.getElementById('delayfbval-'+cfg.id).textContent=v+'%';
+    tracks[cfg.id].fx.delayFeedback=v/100;
+    if(tracks[cfg.id].delayFeedback) tracks[cfg.id].delayFeedback.gain.value=v/100;
+  });
+
+  // Reverb
+  document.getElementById('reverb-'+cfg.id).addEventListener('input',e=>{
+    const v=+e.target.value; document.getElementById('reverbval-'+cfg.id).textContent=v+'%';
+    tracks[cfg.id].fx.reverbWet=v/100;
+    if(tracks[cfg.id].reverbWet) tracks[cfg.id].reverbWet.gain.value=v/100;
+  });
+
+  // Robot
+  document.getElementById('robot-'+cfg.id).addEventListener('change',e=>{
+    tracks[cfg.id].fx.robotOn=e.target.checked;
+    if(tracks[cfg.id].robotGain) tracks[cfg.id].robotGain.gain.value=e.target.checked?1:0;
+    flash(e.target.checked?cfg.name+' : effet robot activé 🤖':cfg.name+' : effet robot désactivé');
+  });
+
+  // Upload fichier
+  row.querySelector('input[type=file]').addEventListener('change',e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const reader=new FileReader();
+    reader.onload=async ev=>{
+      try{
+        if(audioCtx.state==='suspended') await audioCtx.resume();
+        const buf=await audioCtx.decodeAudioData(ev.target.result);
+        tracks[cfg.id].buffer=buf;
+        document.getElementById('file-'+cfg.id).textContent=f.name;
+        row.classList.add('has-file');
+        buildGraph(cfg.id);
+        updateMasterDuration();
+        updateStats();
+        enableTransport();
+        showBanner('✅ '+cfg.name+' chargée — '+fmt(buf.duration)+' — '+f.name);
+        flash(cfg.name+' prête');
+      }catch(err){
+        flash('Erreur — essaie un autre format.');
+        console.error(err);
+      }
+    };
+    reader.readAsArrayBuffer(f);
+  });
+
+  // 🎙 Enregistrement micro
+  document.getElementById('rec-'+cfg.id).addEventListener('click',async()=>{
+    const t=tracks[cfg.id];
+    const btn=document.getElementById('rec-'+cfg.id);
+    const trackRow=document.getElementById('row-'+cfg.id);
+
+    if(t.isRecording){
+      // Arrêter
+      t.mediaRecorder.stop();
+      t.isRecording=false;
+      btn.classList.remove('active-rec');
+      trackRow.classList.remove('recording');
+      btn.textContent='🎙';
+      flash(cfg.name+' — enregistrement terminé, chargement...');
+    } else {
+      // Démarrer
+      try{
+        if(audioCtx.state==='suspended') await audioCtx.resume();
+        const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+        t.recordingChunks=[];
+        t.mediaRecorder=new MediaRecorder(stream);
+        t.mediaRecorder.ondataavailable=ev=>{ if(ev.data.size>0) t.recordingChunks.push(ev.data); };
+        t.mediaRecorder.onstop=async()=>{
+          const blob=new Blob(t.recordingChunks,{type:'audio/webm'});
+          const arrayBuf=await blob.arrayBuffer();
+          try{
+            const audioBuf=await audioCtx.decodeAudioData(arrayBuf);
+            t.buffer=audioBuf;
+            document.getElementById('file-'+cfg.id).textContent='🎙 Enregistrement';
+            trackRow.classList.add('has-file');
+            buildGraph(cfg.id);
+            updateMasterDuration();
+            updateStats();
+            enableTransport();
+            showBanner('✅ '+cfg.name+' enregistrée — '+fmt(audioBuf.duration));
+          }catch(e){ flash('Erreur de décodage enregistrement.'); console.error(e); }
+          stream.getTracks().forEach(tr=>tr.stop());
+        };
+        t.mediaRecorder.start();
+        t.isRecording=true;
+        btn.classList.add('active-rec');
+        trackRow.classList.add('recording');
+        btn.textContent='⏹';
+        flash(cfg.name+' — enregistrement en cours 🔴');
+      }catch(err){
+        flash('Micro non autorisé — autorise l\'accès dans les réglages.');
+        console.error(err);
+      }
+    }
+  });
+});
+
+// ─── Gains effectifs (mute/solo) ──────────────────────────────────────────
+function applyGains(){
+  const hasSolo=Object.values(tracks).some(t=>t.soloed);
+  Object.entries(tracks).forEach(([id,t])=>{
+    if(!t.gainNode) return;
+    let on=true;
+    if(t.muted) on=false;
+    if(hasSolo&&!t.soloed) on=false;
+    t.gainNode.gain.value=on?t.vol/100:0;
+  });
+}
+
+// ─── Durée maître ─────────────────────────────────────────────────────────
+function updateMasterDuration(){
+  masterDuration=0;
+  Object.values(tracks).forEach(t=>{ if(t.buffer&&t.buffer.duration>masterDuration) masterDuration=t.buffer.duration; });
+}
+function updateStats(){
+  statLoaded.textContent=loadedCount()+'/6';
+  statDur.textContent=masterDuration>0?fmt(masterDuration):'—';
+}
+
+// ─── Lecture / Pause ──────────────────────────────────────────────────────
+function startAll(){
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  const offset=Math.max(0,Math.min(startOffset,masterDuration));
+  Object.entries(tracks).forEach(([id,t])=>{
+    if(!t.buffer) return;
+    t.sources.forEach(s=>{try{s.stop();}catch(e){}});
+    t.sources=[];
+    const src=audioCtx.createBufferSource();
+    src.buffer=t.buffer;
+    const entry=buildGraph(id);
+    src.connect(entry);
+    src.start(0,offset);
+    t.sources=[src];
+  });
+  startTime=audioCtx.currentTime;
+  isPlaying=true;
+  playBtn.textContent='⏸'; tapBtn.textContent='⏸ Pause';
+  document.body.classList.add('playing');
+  statSync.textContent='✓ Synchronisé'; statSync.style.color='var(--teal)';
+  rafId=requestAnimationFrame(updateLoop);
+}
+
+function stopAll(){
+  Object.values(tracks).forEach(t=>{t.sources.forEach(s=>{try{s.stop();}catch(e){}});t.sources=[];});
+  startOffset=currentPos();
+  isPlaying=false;
+  if(rafId){cancelAnimationFrame(rafId);rafId=null;}
+  playBtn.textContent='▶'; tapBtn.textContent='▶ Reprendre';
+  document.body.classList.remove('playing');
+  statSync.textContent='En pause'; statSync.style.color='var(--dim)';
+}
+
+function togglePlay(){
+  if(loadedCount()===0){flash('Charge un MP3 ou enregistre via 🎙 d\'abord.');return;}
+  if(isPlaying) stopAll(); else startAll();
+}
+
+playBtn.addEventListener('click',togglePlay);
+tapBtn.addEventListener('click',togglePlay);
+document.addEventListener('keydown',e=>{
+  if(e.code!=='Space') return;
+  if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  e.preventDefault(); togglePlay();
+});
+
+// ─── Boucle d'animation ───────────────────────────────────────────────────
+const vuData=new Uint8Array(128);
+function updateLoop(){
+  if(!isPlaying){rafId=null;return;}
+  const pos=currentPos();
+  if(pos>=masterDuration&&masterDuration>0){
+    stopAll(); startOffset=0; seekBar.value=0;
+    timeReadout.textContent=fmt(0)+' / '+fmt(masterDuration);
+    TRACKS.forEach(c=>{
+      const f1=document.getElementById('vu1-'+c.id);
+      const f2=document.getElementById('vu2-'+c.id);
+      if(f1)f1.style.width='0%'; if(f2)f2.style.width='0%';
+    });
+    return;
+  }
+  if(!isSeeking&&masterDuration>0) seekBar.value=(pos/masterDuration)*100;
+  timeReadout.textContent=fmt(pos)+' / '+fmt(masterDuration);
+  // VU
+  TRACKS.forEach(c=>{
+    const t=tracks[c.id];
+    const f1=document.getElementById('vu1-'+c.id);
+    const f2=document.getElementById('vu2-'+c.id);
+    if(!f1||!t.analyser) return;
+    t.analyser.getByteTimeDomainData(vuData);
+    let rL=0,rR=0;
+    for(let i=0;i<vuData.length/2;i++) rL+=Math.pow((vuData[i]-128)/128,2);
+    for(let i=vuData.length/2;i<vuData.length;i++) rR+=Math.pow((vuData[i]-128)/128,2);
+    f1.style.width=Math.min(100,Math.sqrt(rL/(vuData.length/2))*300)+'%';
+    f2.style.width=Math.min(100,Math.sqrt(rR/(vuData.length/2))*300)+'%';
+  });
+  rafId=requestAnimationFrame(updateLoop);
+}
+
+// ─── Scrub ────────────────────────────────────────────────────────────────
+seekBar.addEventListener('input',()=>{isSeeking=true;startOffset=(+seekBar.value/100)*masterDuration;timeReadout.textContent=fmt(startOffset)+' / '+fmt(masterDuration);});
+seekBar.addEventListener('change',()=>{isSeeking=false;if(isPlaying){stopAll();startAll();}});
+
+// ─── Actions globales ─────────────────────────────────────────────────────
+document.getElementById('unmuteAllBtn').addEventListener('click',()=>{
+  TRACKS.forEach(c=>{tracks[c.id].muted=false;document.getElementById('mute-'+c.id).classList.remove('active-mute');document.getElementById('row-'+c.id).classList.remove('muted');});
+  applyGains(); flash('Toutes les pistes actives.');
+});
+document.getElementById('unsoloAllBtn').addEventListener('click',()=>{
+  TRACKS.forEach(c=>{tracks[c.id].soloed=false;document.getElementById('solo-'+c.id).classList.remove('active-solo');document.getElementById('row-'+c.id).classList.remove('soloed');});
+  applyGains(); flash('Solos annulés.');
+});
+document.getElementById('resetAllBtn').addEventListener('click',()=>{
+  if(isPlaying) stopAll();
+  TRACKS.forEach(c=>{
+    const t=tracks[c.id];
+    t.buffer=null;t.sources=[];t.muted=false;t.soloed=false;t.vol=85;
+    if(t.gainNode){try{t.gainNode.disconnect();}catch(e){}}
+    t.gainNode=null;t.analyser=null;
+    ['eqLow','eqMid','eqHigh','delayNode','delayFeedback','delayWet','reverbNode','reverbWet','robotOsc','robotGain'].forEach(n=>{
+      if(t[n]){try{t[n].disconnect();}catch(e){}}t[n]=null;
+    });
+    t.fx={eqLow:0,eqMid:0,eqHigh:0,delayTime:0.35,delayFeedback:0,delayWet:0,reverbWet:0,robotOn:false};
+    document.getElementById('file-'+c.id).textContent='Aucun fichier';
+    document.getElementById('row-'+c.id).className='track';
+    document.getElementById('mute-'+c.id).classList.remove('active-mute');
+    document.getElementById('solo-'+c.id).classList.remove('active-solo');
+    document.getElementById('rec-'+c.id).classList.remove('active-rec');
+    document.getElementById('rec-'+c.id).textContent='🎙';
+    document.getElementById('vol-'+c.id).value=85;
+    document.getElementById('volval-'+c.id).textContent='85%';
+    // Reset EQ sliders
+    ['low','mid','high'].forEach(b=>{
+      const sl=document.getElementById('eq-'+b+'-'+c.id);
+      if(sl){sl.value=0; document.getElementById('eq'+b+'val-'+c.id).textContent='0dB';}
+    });
+    ['delay-wet','delay-fb','reverb'].forEach(s=>{
+      const sl=document.getElementById(s+'-'+c.id); if(sl) sl.value=0;
+    });
+    const rob=document.getElementById('robot-'+c.id); if(rob) rob.checked=false;
+    const f1=document.getElementById('vu1-'+c.id); if(f1) f1.style.width='0%';
+    const f2=document.getElementById('vu2-'+c.id); if(f2) f2.style.width='0%';
+  });
+  masterDuration=0;startOffset=0;
+  playBtn.disabled=true;tapBtn.disabled=true;seekBar.disabled=true;
+  seekBar.value=0;timeReadout.textContent='00:00 / 00:00';
+  statLoaded.textContent='0/6';statDur.textContent='—';
+  statSync.textContent='En attente';statSync.style.color='var(--dim)';
+  tapBtn.textContent='▶ Taper pour lancer';
+  flash('Mixeur réinitialisé.');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ÉTAPES 3+4 — Basse synthétique synchronisée BPM + Accords
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Notes MIDI → fréquences pour les accords courants ────────────────────
+const CHORD_FREQS = {
+  'C':65.41,'Cm':65.41,'C7':65.41,'Cmaj7':65.41,
+  'D':73.42,'Dm':73.42,'D7':73.42,
+  'E':82.41,'Em':82.41,'E7':82.41,
+  'F':87.31,'Fm':87.31,'F7':87.31,
+  'G':98.00,'Gm':98.00,'G7':98.00,
+  'A':110.00,'Am':110.00,'A7':110.00,
+  'B':123.47,'Bm':123.47,'B7':123.47,
+  'Bb':116.54,'Bbm':116.54,
+  'Eb':77.78,'Ab':103.83,'Db':69.30,'F#':92.50,
+};
+
+// ─── Patterns rythmiques par style (en fraction de mesure) ────────────────
+// Chaque valeur = [temps_en_beats, durée_en_beats]
+const BASS_PATTERNS = {
+  roulant:  [[0,0.4],[0.5,0.4],[1,0.4],[1.5,0.4],[2,0.4],[2.5,0.4],[3,0.4],[3.5,0.4]],
+  himene:   [[0,0.8],[1,0.8],[2,0.8],[3,0.8]],
+  slow:     [[0,1.5],[2,1.5]],
+  upbeat:   [[0,0.3],[0.75,0.3],[1,0.3],[1.75,0.3],[2,0.3],[2.75,0.3],[3,0.3],[3.75,0.3]],
+};
+
+let currentBPM = 100;
+let currentStyle = 'roulant';
+let chordTimeline = []; // [{time:seconds, chord:'Am'}, ...]
+let bassActive = false;
+let bassScheduler = null;
+let bassNextBeat = 0;
+let bassStartTime = 0;
+let bassGain = null;
+
+// ─── DOM étapes 3+4 ───────────────────────────────────────────────────────
+const detectBpmBtn  = document.getElementById('detectBpmBtn');
+const bpmDisplay    = document.getElementById('bpmDisplay');
+const bpmManual     = document.getElementById('bpmManual');
+const bpmManualBtn  = document.getElementById('bpmManualBtn');
+const chordGrid     = document.getElementById('chordGrid');
+const jsonImport    = document.getElementById('jsonImport');
+const clearChordBtn = document.getElementById('clearChordBtn');
+const startBassBtn  = document.getElementById('startBassBtn');
+const stopBassBtn   = document.getElementById('stopBassBtn');
+const bassVolSlider = document.getElementById('bassVolume');
+const bassVolVal    = document.getElementById('bassVolVal');
+const bassStatus    = document.getElementById('bassStatus');
+
+// Gain de la basse synthétique → masterGain
+bassGain = audioCtx.createGain();
+bassGain.gain.value = 0.7;
+bassGain.connect(masterGain);
+
+// ─── Détection BPM (autocorrélation sur la piste Percussion) ─────────────
+detectBpmBtn.addEventListener('click', ()=>{
+  const perc = tracks['perc'];
+  if(!perc.buffer){ flash('Charge d\'abord la piste Percussion 🥁'); return; }
+  const bpm = estimateBPM(perc.buffer);
+  currentBPM = bpm;
+  bpmDisplay.textContent = bpm + ' BPM';
+  bpmManual.value = bpm;
+  checkBassReady();
+  flash('BPM détecté : ' + bpm);
+});
+
+function estimateBPM(buffer){
+  const data = buffer.getChannelData(0);
+  const sr = buffer.sampleRate;
+  // Sous-échantillonnage pour performance
+  const step = 4;
+  const len = Math.min(data.length, sr * 30); // max 30s
+  // Calcul de l'énergie par fenêtre de 512 samples
+  const winSize = 512;
+  const energies = [];
+  for(let i=0; i<len-winSize; i+=winSize){
+    let e=0;
+    for(let j=0;j<winSize;j+=step) e+=data[i+j]*data[i+j];
+    energies.push(e);
+  }
+  // Autocorrélation sur les énergies
+  const minBPM=60, maxBPM=180;
+  const fps = sr/winSize;
+  let bestBPM=100, bestScore=-1;
+  for(let bpm=minBPM; bpm<=maxBPM; bpm++){
+    const period = fps*(60/bpm);
+    let score=0;
+    for(let i=0; i<energies.length-period; i++){
+      score += energies[i]*energies[Math.round(i+period)];
+    }
+    if(score>bestScore){ bestScore=score; bestBPM=bpm; }
+  }
+  return Math.round(bestBPM);
+}
+
+// ─── BPM manuel ───────────────────────────────────────────────────────────
+bpmManualBtn.addEventListener('click',()=>{
+  const v = parseInt(bpmManual.value);
+  if(v>=40&&v<=240){ currentBPM=v; bpmDisplay.textContent=v+' BPM'; checkBassReady(); flash('BPM : '+v); }
+});
+
+// ─── Style de basse ───────────────────────────────────────────────────────
+document.querySelectorAll('.style-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.style-btn').forEach(b=>b.classList.remove('primary'));
+    btn.classList.add('primary');
+    currentStyle = btn.dataset.style;
+    flash('Style : '+btn.textContent);
+  });
+});
+
+// ─── Grille d'accords ─────────────────────────────────────────────────────
+function parseChordGrid(text){
+  const lines = text.trim().split(/\r?\n/);
+  const result = [];
+  lines.forEach(line=>{
+    const parts = line.trim().split(/\s+/);
+    if(parts.length>=2){
+      const t = parseFloat(parts[0]);
+      const c = parts[1];
+      if(!isNaN(t) && c) result.push({time:t, chord:c});
+    }
+  });
+  return result.sort((a,b)=>a.time-b.time);
+}
+
+chordGrid.addEventListener('input',()=>{
+  chordTimeline = parseChordGrid(chordGrid.value);
+  checkBassReady();
+});
+
+clearChordBtn.addEventListener('click',()=>{ chordGrid.value=''; chordTimeline=[]; checkBassReady(); });
+
+// Import JSON depuis Étape 1
+jsonImport.addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      // Extraire les changements d'accords depuis les captures
+      const lines=[];
+      let lastChord=null;
+      if(data.captures){
+        data.captures.forEach(cap=>{
+          if(cap.chord && cap.chord!==lastChord){
+            lines.push(cap.time.toFixed(2)+' '+cap.chord);
+            lastChord=cap.chord;
+          }
+        });
+      }
+      chordGrid.value=lines.join('\n');
+      chordTimeline=parseChordGrid(chordGrid.value);
+      checkBassReady();
+      showBanner('✅ '+lines.length+' accords importés depuis le JSON');
+    }catch(err){ flash('Erreur lecture JSON — vérifie le fichier.'); }
+  };
+  reader.readAsText(f);
+});
+
+// ─── Vérification prêt ────────────────────────────────────────────────────
+function checkBassReady(){
+  const ready = currentBPM>0 && chordTimeline.length>0;
+  startBassBtn.disabled = !ready;
+  if(ready) bassStatus.textContent='Prêt — BPM: '+currentBPM+' · '+chordTimeline.length+' accord(s) · Style: '+currentStyle;
+  else bassStatus.textContent='En attente \u2014 d\u00e9tecte le BPM et charge une grille d\'accords.';
+}
+
+// ─── Accord actif à un instant t ─────────────────────────────────────────
+function getChordAt(t){
+  let chord = chordTimeline[0]?.chord || 'Am';
+  for(let i=0;i<chordTimeline.length;i++){
+    if(chordTimeline[i].time<=t) chord=chordTimeline[i].chord;
+    else break;
+  }
+  return chord;
+}
+
+// ─── Synthèse d'une note de basse ─────────────────────────────────────────
+function playBassNote(freq, startAt, duration){
+  const osc = audioCtx.createOscillator();
+  const env = audioCtx.createGain();
+  // Forme d'onde basse : sawtooth pour son chaud tahitien
+  osc.type = 'sawtooth';
+  osc.frequency.value = freq;
+  // Filtre passe-bas pour adoucir
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 400;
+  filter.Q.value = 1.5;
+  osc.connect(filter);
+  filter.connect(env);
+  env.connect(bassGain);
+  // Envelope ADSR simple
+  env.gain.setValueAtTime(0, startAt);
+  env.gain.linearRampToValueAtTime(0.8, startAt+0.02);
+  env.gain.exponentialRampToValueAtTime(0.001, startAt+duration-0.01);
+  osc.start(startAt);
+  osc.stop(startAt+duration);
+}
+
+// ─── Scheduler de basse (look-ahead 200ms) ────────────────────────────────
+function scheduleBass(){
+  if(!bassActive) return;
+  const now = audioCtx.currentTime;
+  const lookAhead = 0.2; // 200ms d'avance
+  const beatDuration = 60/currentBPM;
+  const pattern = BASS_PATTERNS[currentStyle]||BASS_PATTERNS.roulant;
+  const beatsPerMeasure = 4;
+  const measureDuration = beatDuration*beatsPerMeasure;
+
+  while(bassNextBeat < now+lookAhead){
+    // Position dans la chanson
+    const songPos = bassNextBeat - bassStartTime + startOffset;
+    const chord = getChordAt(songPos);
+    const freq = CHORD_FREQS[chord] || 110;
+
+    // Position dans la mesure
+    const measurePos = (bassNextBeat - bassStartTime) % measureDuration;
+    const beatInMeasure = measurePos / beatDuration;
+
+    // Trouver la prochaine note du pattern
+    let nextNoteBeats = beatsPerMeasure; // par défaut fin de mesure
+    for(let i=0;i<pattern.length;i++){
+      if(pattern[i][0] >= beatInMeasure + 0.01){
+        nextNoteBeats = pattern[i][0] - beatInMeasure;
+        break;
+      }
+    }
+
+    // Jouer la note si elle est dans le pattern
+    let played = false;
+    for(let i=0;i<pattern.length;i++){
+      if(Math.abs(pattern[i][0]-beatInMeasure)<0.05){
+        const dur = pattern[i][1]*beatDuration;
+        playBassNote(freq, bassNextBeat, dur);
+        played=true;
+        break;
+      }
+    }
+
+    // Avancer au prochain 1/8 de beat
+    bassNextBeat += beatDuration/8;
+  }
+
+  bassScheduler = setTimeout(scheduleBass, 100);
+}
+
+// ─── Démarrer/Arrêter la basse ────────────────────────────────────────────
+startBassBtn.addEventListener('click',()=>{
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  bassActive=true;
+  bassStartTime=audioCtx.currentTime;
+  bassNextBeat=audioCtx.currentTime;
+  scheduleBass();
+  startBassBtn.disabled=true;
+  stopBassBtn.disabled=false;
+  bassStatus.textContent='🎵 Basse en cours — BPM: '+currentBPM+' · Style: '+currentStyle;
+  flash('Basse synthétique lancée !');
+});
+
+stopBassBtn.addEventListener('click',()=>{
+  bassActive=false;
+  clearTimeout(bassScheduler);
+  startBassBtn.disabled=false;
+  stopBassBtn.disabled=true;
+  bassStatus.textContent='Arrêtée.';
+  flash('Basse arrêtée.');
+});
+
+// Volume basse
+bassVolSlider.addEventListener('input',()=>{
+  const v=+bassVolSlider.value;
+  bassGain.gain.value=v/100;
+  bassVolVal.textContent=v+'%';
+});
+
+</script>
+</body>
+</html>
